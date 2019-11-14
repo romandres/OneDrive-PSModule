@@ -5,6 +5,8 @@ PowerShell Module to access OneDrive for Business using the Microsoft Graph API.
 
 ### Connect using Azure AD Application Identity
 
+* An application identity has access to all files of all users!
+
 ```powershell
 Connect-OneDrive -ApplicationId $appId -ApplicationSecret $appSecret -TenantId $tenantId
 ```
@@ -15,7 +17,7 @@ Connect-OneDrive -ApplicationId $appId -ApplicationSecret $appSecret -TenantId $
 Disconnect-OneDrive
 ```
 
-## Get files inside a folder
+## Get files inside a folder of a specific users OneDrive
 
 ```powershell
 Get-OneDriveChildItem -Path "Documents/Images" -UserPrincipalName "jane.doe@contoso.com"
