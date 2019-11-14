@@ -26,7 +26,7 @@ Get-OneDriveChildItem -Path "Documents/Images" -UserPrincipalName "jane.doe@cont
 ## Download files
 
 ```powershell
-$itemsToDownload | Invoke-OneDriveItemDownload -Destination $destinationPath
+$itemsToDownload | Invoke-OneDriveItemDownload -Destination "C:\Temp"
 ```
 
 ## Delete files
