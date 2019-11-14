@@ -5,6 +5,7 @@
     <AssemblyName>OneDrive</AssemblyName>
     <RootNamespace>OneDriveModule</RootNamespace>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <Version>0.1.1</Version>
   </PropertyGroup>
 
   <ItemGroup>
