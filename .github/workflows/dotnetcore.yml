@@ -24,7 +24,7 @@ jobs:
     - name: Create artifact directory
       run: mkdir -p ../artifact/onedrive-psmodule
     - name: Copy files to artifact directory
-      run: cp *.dll *.psd1 ../artifact/onedrive-psmodule
+      run: cp src/OneDriveModule/bin/Release/netstandard2.0/*.dll src/OneDriveModule/bin/Release/netstandard2.0/*.psd1 ../artifact/onedrive-psmodule
     - name: Upload artifact
       uses: actions/upload-artifact@v1.0.0
       with:
