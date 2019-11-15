@@ -8,6 +8,8 @@ namespace OneDriveModule
     [Cmdlet(VerbsCommon.Get, "OneDriveChildItem")]
     public class GetOneDriveChildItem : PSCmdlet
     {
+        private const int queryTop = 1000;
+
         [Parameter(Mandatory = true)]
         public string Path { get; set; }
 
@@ -25,25 +27,34 @@ namespace OneDriveModule
 
         protected override void EndProcessing()
         {
-            var items = Settings.GraphClient
+            var nextRequest = Settings.GraphClient
                 .Users[UserPrincipalName]
                 .Drive
                 .Root
                 .ItemWithPath(Path)
                 .Children
                 .Request()
-                .GetAsync()
-                .GetAwaiter()
-                .GetResult();
+                .Top(queryTop);
 
-            items
-                .ToList()
-                .ForEach(item => WriteObject(new OneDriveItem()
-                {
-                    Id = item.Id,
-                    Name = item.Name,
-                    UserId = UserPrincipalName,
-                }));
+            while (nextRequest is object)
+            {
+                var currentPageResult = nextRequest
+                    .GetAsync()
+                    .GetAwaiter()
+                    .GetResult();
+
+                nextRequest = currentPageResult.NextPageRequest;
+
+                currentPageResult
+                    .Select(item => new OneDriveItem
+                    {
+                        Id = item.Id,
+                        Name = item.Name,
+                        UserId = UserPrincipalName,
+                    })
+                    .ToList()
+                    .ForEach(item => WriteObject(item));
+            }
         }
     }
 }
