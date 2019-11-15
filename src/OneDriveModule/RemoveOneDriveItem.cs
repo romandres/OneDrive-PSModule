@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Management.Automation;
+using Microsoft.Graph;
 
 namespace OneDriveModule
 {
@@ -20,15 +21,23 @@ namespace OneDriveModule
 
         protected override void ProcessRecord()
         {
-            WriteVerbose($"Removing file {Item.Name}");
+            WriteVerbose($"Removing item {Item.Name}");
 
-            Settings.GraphClient
-                .Users[Item.UserId]
-                .Drive
-                .Items[Item.Id]
-                .Request()
-                .DeleteAsync()
-                .Wait();
+            try
+            {
+                Settings.GraphClient
+                    .Users[Item.UserId]
+                    .Drive
+                    .Items[Item.Id]
+                    .Request()
+                    .DeleteAsync()
+                    .GetAwaiter()
+                    .GetResult();
+            }
+            catch (ServiceException ex)
+            {
+                WriteError(new ErrorRecord(ex, "RemoveItemFailed", ErrorCategory.NotSpecified, Item));
+            }
         }
     }
 }
