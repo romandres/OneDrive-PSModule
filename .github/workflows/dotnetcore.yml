@@ -22,7 +22,7 @@ jobs:
     - name: Build with dotnet
       run: dotnet build src/OneDriveModule.sln --configuration Release
     - name: Create artifact directory
-      run: mkdir ../artifact/onedrive-psmodule
+      run: mkdir -R ../artifact/onedrive-psmodule
     - name: Copy files to artifact directory
       run: cp *.dll *.psd1 ../artifact/onedrive-psmodule
     - name: Upload artifact
