@@ -7,11 +7,16 @@ namespace OneDriveModule
     [Cmdlet(VerbsLifecycle.Invoke, "OneDriveItemDownload")]
     public class DownloadOneDriveItem : PSCmdlet
     {
+        private const int bufferSize = 16 * 320 * 1024;
+
         [Parameter(Mandatory = true, ValueFromPipeline = true)]
         public OneDriveItem Item { get; set; }
 
         [Parameter(Mandatory = true)]
         public string Destination { get; set; }
+
+        [Parameter()]
+        public SwitchParameter Force { get; set; }
 
         protected override void BeginProcessing()
         {
@@ -26,20 +31,40 @@ namespace OneDriveModule
         {
             string destinationPath = Path.Combine(Destination, Item.Name);
 
-            using (FileStream fs = new FileStream(destinationPath, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, 16 * 320 * 1024, FileOptions.None))
-            {
-                WriteVerbose($"Downloading file {Item.Name}");
+            var fileMode = File.Exists(destinationPath) && Force.IsPresent ? FileMode.Create : FileMode.CreateNew;
 
-                Settings.GraphClient
-                    .Users[Item.UserId]
-                    .Drive
-                    .Items[Item.Id]
-                    .Content
-                    .Request()
-                    .GetAsync()
-                    .GetAwaiter()
-                    .GetResult()
-                    .CopyTo(fs);
+            try
+            {
+                using (FileStream fs = new FileStream(destinationPath, fileMode, FileAccess.Write, FileShare.None, bufferSize, FileOptions.None))
+                {
+                    WriteVerbose($"Downloading file {Item.Name}");
+
+                    Settings.GraphClient
+                        .Users[Item.UserId]
+                        .Drive
+                        .Items[Item.Id]
+                        .Content
+                        .Request()
+                        .GetAsync()
+                        .GetAwaiter()
+                        .GetResult()
+                        .CopyTo(fs);
+                }
+
+                WriteObject(Item);
+            }
+            catch (IOException ex)
+            {
+                string errorId = "FileWriteError";
+                var errorCategory = ErrorCategory.WriteError;
+
+                if (ex.HResult == -2147024816)
+                {
+                    errorId = "FileAlreadyExists";
+                    errorCategory = ErrorCategory.ResourceExists;
+                }
+
+                WriteError(new ErrorRecord(ex, errorId, errorCategory, destinationPath));
             }
         }
     }
