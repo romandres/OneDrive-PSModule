@@ -50,6 +50,8 @@ namespace OneDriveModule
                         .GetResult()
                         .CopyTo(fs);
                 }
+
+                WriteObject(Item);
             }
             catch (IOException ex)
             {
