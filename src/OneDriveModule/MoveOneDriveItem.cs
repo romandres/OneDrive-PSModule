@@ -45,8 +45,6 @@ namespace OneDriveModule
 
             if (destinationFolder is object)
             {
-                WriteVerbose("NewDriveItem step");
-
                 var newDriveItem = new DriveItem
                 {
                     ParentReference = new ItemReference
@@ -56,11 +54,9 @@ namespace OneDriveModule
                     Name = Item.Name
                 };
 
-                WriteVerbose($"Item destination parent ID '{newDriveItem.ParentReference.Id}', destination name '{newDriveItem.Name}'");
-
                 try
                 {
-                    WriteVerbose($"Moving item '{Item.Name}' with ID '{Item.Id}' to '{Destination}'");
+                    WriteVerbose($"Moving item '{Item.Name}' with ID '{Item.Id}' to '{Destination}'.");
 
                     DriveItem driveItem = Settings.GraphClient
                         .Users[Item.UserId]
@@ -71,19 +67,20 @@ namespace OneDriveModule
                         .GetAwaiter()
                         .GetResult();
 
-                    if (driveItem is null)
+                    if (driveItem is object)
                     {
-                        WriteVerbose("driveItem is null");
+                        WriteObject(new OneDriveItem()
+                        {
+                            Id = driveItem.Id,
+                            Name = driveItem.Name,
+                            UserId = Item.UserId
+                        });
                     }
-
-                    WriteVerbose("Output step");
-
-                    WriteObject(new OneDriveItem()
+                    else
                     {
-                        Id = driveItem.Id,
-                        Name = driveItem.Name,
-                        UserId = Item.UserId
-                    });
+                        var exception = new InvalidOperationException("DriveItem returned by move operation is null which means the move operation was not successful.");
+                        WriteError(new ErrorRecord(exception, "MoveItemFailed", ErrorCategory.NotSpecified, newDriveItem));
+                    }
                 }
                 catch (ServiceException ex)
                 {
