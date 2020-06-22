@@ -45,7 +45,7 @@ namespace OneDriveModule
 
             if (destinationFolder is object)
             {
-                WriteVerbose($"Moving item '{Item.Name}' to '{Destination}'");
+                WriteVerbose("NewDriveItem step");
 
                 var newDriveItem = new DriveItem
                 {
@@ -56,8 +56,12 @@ namespace OneDriveModule
                     Name = Item.Name
                 };
 
+                WriteVerbose($"Item destination parent ID '{newDriveItem.ParentReference.Id}', destination name '{newDriveItem.Name}'");
+
                 try
                 {
+                    WriteVerbose($"Moving item '{Item.Name}' with ID '{Item.Id}' to '{Destination}'");
+
                     DriveItem driveItem = Settings.GraphClient
                         .Users[Item.UserId]
                         .Drive
@@ -66,6 +70,13 @@ namespace OneDriveModule
                         .UpdateAsync(newDriveItem)
                         .GetAwaiter()
                         .GetResult();
+
+                    if (driveItem is null)
+                    {
+                        WriteVerbose("driveItem is null");
+                    }
+
+                    WriteVerbose("Output step");
 
                     WriteObject(new OneDriveItem()
                     {
