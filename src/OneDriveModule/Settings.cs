@@ -1,9 +1,7 @@
-﻿using Microsoft.Graph;
-
-namespace OneDriveModule
+﻿namespace OneDriveModule
 {
     internal static class Settings
     {
-        public static IGraphServiceClient GraphClient;
+        public static GraphClientWrapper? GraphClientWrapper;
     }
 }
