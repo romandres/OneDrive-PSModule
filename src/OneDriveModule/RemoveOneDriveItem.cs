@@ -1,31 +1,26 @@
-﻿using System;
-using System.Management.Automation;
+﻿using System.Management.Automation;
 using Microsoft.Graph;
 
 namespace OneDriveModule
 {
     [Cmdlet(VerbsCommon.Remove, "OneDriveItem")]
-    public class RemoveOneDriveItem : PSCmdlet
+    public class RemoveOneDriveItem : BaseGraphCmdlet
     {
         [Parameter(Mandatory = true, ValueFromPipeline = true)]
-        public OneDriveItem Item { get; set; }
+        public OneDriveItem? Item { get; set; }
 
         protected override void BeginProcessing()
         {
-            if (Settings.GraphClient is null)
-            {
-                var exception = new InvalidOperationException("Connect-OneDrive needs to be executed before running other commands.");
-                ThrowTerminatingError(new ErrorRecord(exception, "NotConnected", ErrorCategory.InvalidOperation, Settings.GraphClient));
-            }
+            base.BeginProcessing();
         }
 
         protected override void ProcessRecord()
         {
-            WriteVerbose($"Removing item {Item.Name}");
+            WriteVerbose($"Removing item {Item!.Name}");
 
             try
             {
-                Settings.GraphClient
+                Settings.GraphClientWrapper!.GraphServiceClient
                     .Users[Item.UserId]
                     .Drive
                     .Items[Item.Id]

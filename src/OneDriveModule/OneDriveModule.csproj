@@ -1,16 +1,19 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <TargetFramework>netstandard2.0</TargetFramework>
     <AssemblyName>OneDrive</AssemblyName>
     <RootNamespace>OneDriveModule</RootNamespace>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-    <Version>0.2.0</Version>
+    <Version>0.3.0</Version>
+
+    <LangVersion>8.0</LangVersion>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Graph" Version="1.20.0" />
-    <PackageReference Include="Microsoft.Identity.Client" Version="4.6.0" />
+    <PackageReference Include="Microsoft.Graph" Version="3.32.0" />
+    <PackageReference Include="Microsoft.Identity.Client" Version="4.31.0" />
     <PackageReference Include="PowerShellStandard.Library" Version="5.1.0" />
   </ItemGroup>
 

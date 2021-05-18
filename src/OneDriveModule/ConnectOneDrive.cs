@@ -1,8 +1,8 @@
-﻿using System.Management.Automation;
+﻿using System;
+using System.Management.Automation;
 using System.Net;
-using System.Net.Http.Headers;
 using System.Security;
-using Microsoft.Graph;
+using System.Security.Cryptography.X509Certificates;
 using Microsoft.Identity.Client;
 
 namespace OneDriveModule
@@ -17,43 +17,58 @@ namespace OneDriveModule
         };
 
         [Parameter(Mandatory = true)]
-        public string ApplicationId { get; set; }
+        public string? ApplicationId { get; set; }
+
+        [Parameter(Mandatory = true, ParameterSetName = "WithAppSecret")]
+        public SecureString? ApplicationSecret { get; set; }
+
+        [Parameter(Mandatory = true, ParameterSetName = "WithAppCertificate")]
+        public string? ApplicationCertificateThumbprint { get; set; }
 
         [Parameter(Mandatory = true)]
-        public SecureString ApplicationSecret { get; set; }
-
-        [Parameter(Mandatory = true)]
-        public string TenantId { get; set; }
+        public string? TenantId { get; set; }
 
         protected override void EndProcessing()
         {
             var appCredential = new NetworkCredential(string.Empty, ApplicationSecret);
-            Settings.GraphClient = Login(ApplicationId, appCredential.Password, TenantId);
+            Settings.GraphClientWrapper = Login(ApplicationId!, appCredential.Password, TenantId!);
         }
 
-        private GraphServiceClient Login(string clientId, string clientSecret, string tenantId)
+        private GraphClientWrapper Login(string clientId, string clientSecret, string tenantId)
         {
-            var clientApp = ConfidentialClientApplicationBuilder
+            var clientAppBuilder = ConfidentialClientApplicationBuilder
                 .Create(clientId)
-                .WithClientSecret(clientSecret)
                 .WithAuthority(AadAuthorityAudience.AzureAdMyOrg)
-                .WithTenantId(tenantId)
-                .Build();
+                .WithTenantId(tenantId);
 
-            var authResult = clientApp
-                .AcquireTokenForClient(scopes)
-                .ExecuteAsync()
-                .GetAwaiter()
-                .GetResult();
+            if (ParameterSetName == "WithAppCertificate")
+            {
+                // Open current users personal certificate store
+                using var certStore = new X509Store(StoreName.My, StoreLocation.CurrentUser);
+                certStore.Open(OpenFlags.ReadOnly);
 
-            var graphClient = new GraphServiceClient(
-                        "https://graph.microsoft.com/v1.0",
-                        new DelegateAuthenticationProvider(async (requestMessage) =>
-                        {
-                            requestMessage.Headers.Authorization = new AuthenticationHeaderValue("bearer", authResult.AccessToken);
-                        }));
+                // Find certificate by thumbprint
+                var certResults = certStore.Certificates.Find(X509FindType.FindByThumbprint, ApplicationCertificateThumbprint, false);
+                if (certResults.Count == 1)
+                {
+                    clientAppBuilder.WithCertificate(certResults[0]);
+                }
+                else
+                {
+                    throw new InvalidOperationException("Certificate could not be found using thumbprint.");
+                }
+            }
+            else if (ParameterSetName == "WithAppSecret")
+            {
+                clientAppBuilder
+                    .WithClientSecret(clientSecret);
+            }
+            else
+            {
+                throw new InvalidOperationException("Application secret or certificate required to connect.");
+            }
 
-            return graphClient;
+            return new GraphClientWrapper(clientAppBuilder.Build());
         }
     }
 }

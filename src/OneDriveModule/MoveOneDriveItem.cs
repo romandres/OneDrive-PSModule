@@ -5,31 +5,27 @@ using Microsoft.Graph;
 namespace OneDriveModule
 {
     [Cmdlet(VerbsCommon.Move, "OneDriveItem")]
-    public class MoveOneDriveItem : PSCmdlet
+    public class MoveOneDriveItem : BaseGraphCmdlet
     {
         [Parameter(Mandatory = true, ValueFromPipeline = true)]
-        public OneDriveItem Item { get; set; }
+        public OneDriveItem? Item { get; set; }
 
         [Parameter(Mandatory = true)]
-        public string Destination { get; set; }
+        public string? Destination { get; set; }
 
         protected override void BeginProcessing()
         {
-            if (Settings.GraphClient is null)
-            {
-                var exception = new InvalidOperationException("Connect-OneDrive needs to be executed before running other commands.");
-                ThrowTerminatingError(new ErrorRecord(exception, "NotConnected", ErrorCategory.InvalidOperation, Settings.GraphClient));
-            }
+            base.BeginProcessing();
         }
 
         protected override void ProcessRecord()
         {
-            DriveItem destinationFolder = null;
+            DriveItem? destinationFolder = null;
 
             try
             {
-                destinationFolder = Settings.GraphClient
-                    .Users[Item.UserId]
+                destinationFolder = Settings.GraphClientWrapper!.GraphServiceClient
+                    .Users[Item!.UserId]
                     .Drive
                     .Root
                     .ItemWithPath(Destination)
@@ -45,20 +41,20 @@ namespace OneDriveModule
 
             if (destinationFolder is object)
             {
-                WriteVerbose($"Moving item '{Item.Name}' to '{Destination}'");
-
                 var newDriveItem = new DriveItem
                 {
                     ParentReference = new ItemReference
                     {
                         Id = destinationFolder.Id
                     },
-                    Name = Item.Name
+                    Name = Item!.Name
                 };
 
                 try
                 {
-                    DriveItem driveItem = Settings.GraphClient
+                    WriteVerbose($"Moving item '{Item.Name}' with ID '{Item.Id}' to '{Destination}'.");
+
+                    DriveItem driveItem = Settings.GraphClientWrapper!.GraphServiceClient
                         .Users[Item.UserId]
                         .Drive
                         .Items[Item.Id]
@@ -67,12 +63,20 @@ namespace OneDriveModule
                         .GetAwaiter()
                         .GetResult();
 
-                    WriteObject(new OneDriveItem()
+                    if (driveItem is object)
                     {
-                        Id = driveItem.Id,
-                        Name = driveItem.Name,
-                        UserId = Item.UserId
-                    });
+                        WriteObject(new OneDriveItem()
+                        {
+                            Id = driveItem.Id,
+                            Name = driveItem.Name,
+                            UserId = Item.UserId
+                        });
+                    }
+                    else
+                    {
+                        var exception = new InvalidOperationException("DriveItem returned by move operation is null which means the move operation was not successful.");
+                        WriteError(new ErrorRecord(exception, "MoveItemFailed", ErrorCategory.NotSpecified, newDriveItem));
+                    }
                 }
                 catch (ServiceException ex)
                 {
